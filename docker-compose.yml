@@ -1,0 +1,28 @@
+version: '3.1'
+
+services:
+  postgredb:
+    container_name: postgredb
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: VFJKGdjzJhPqMuL4kfGZtLadqKdweahISYMMbSIQxLIz9QIg2u6bjmybdeUD
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./data/db:/var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+
+  adminer:
+    image: dpage/pgadmin4
+    restart: always
+    depends_on:
+      - postgredb
+    environment:
+      PGADMIN_DEFAULT_EMAIL: hard90325@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: D8ztXt4TkvY8FjCJAVdfaGgRyFkd9TyT9U2EHCzVeQaWMhPQ9QRJCA7md9Yk
+    volumes:
+      - ./data/pgadmin:/var/lib/pgadmin
+    ports:
+      - "8000:80"

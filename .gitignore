@@ -1,0 +1,17 @@
+# Dependency directories
+node_modules/
+
+# Webshtorm files
+.idea
+
+# All lockfiles
+*.lock
+
+# Dotenv environment variables file
+.env
+
+.driveupload
+
+src/resources
+
+data

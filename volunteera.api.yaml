@@ -1,0 +1,1782 @@
+openapi: 3.0.0
+info:
+  title: Volunteera API
+  version: 0.0.2
+servers:
+  - url: https://dev.api.volunteera.app
+    description: Dev server
+paths:
+  /points:
+    get:
+      summary: Returns all points sorted by filters. If no filters returns all points.
+      tags:
+        - Points
+      operationId: getAllPoints
+      parameters:
+        - in: query
+          name: administrative_area_id
+          schema:
+            type: integer
+          description: The administrative area's id for filter points by it.
+        - in: query
+          name: label_ids
+          schema:
+            type: array
+            items:
+              type: integer
+      responses:
+        '200':
+          description: Successful response with array of points. nextTransition shows the next state of point according to current time. Weekdays 0 - Sun, 1 - Mon, 2 - Tue, 3 - Wed, 4 - Thu, 5 - Fri, 6 - Sat, 7 - today, 8 - tomorrow
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        lat:
+                          type: number
+                        lng:
+                          type: number
+                        administrative_area_id:
+                          type: number
+                        formatted_adress:
+                          type: string
+                        tz:
+                          type: string
+                        organization_name:
+                          type: string
+                        organization_icon:
+                          type: string
+                        labels:
+                          type: array
+                          items:
+                            type: integer
+                        is_open:
+                          type: boolean
+                        next_state:
+                          type: object
+                          properties:
+                            weekday:
+                              type: integer
+                            time:
+                              type: string
+                  message:
+                    type: string
+                example:
+                  data:
+                    - id: 5
+                      lat: 50.35975
+                      lng: -29.877625
+                      administrative_area_id: 1
+                      formatted_adress: Жуковського, 22, Одеса, Одеська область
+                      tz: Europe/Kiev
+                      organization_name: automaidan
+                      organization_icon: 6d44471180a74c1c90f712c781447b59
+                      labels:
+                        - 1
+                        - 2
+                      is_open: true
+                      next_state:
+                        weekday: 1
+                        time: '09:00'
+                    - id: 6
+                      lat: 45.3975
+                      lng: 29.877625
+                      administrative_area_id: 1
+                      formatted_adress: Жуковського, 22, Одеса, Одеська область
+                      tz: Europe/Kiev
+                      organization_name: 10 kvitn'a
+                      organization_icon: 6d44471180a74c1c90f712c781447b59
+                      labels:
+                        - 1
+                      is_open: true
+                      next_state:
+                        weekday: 1
+                        time: '09:00'
+                  message: SUCCESS
+        '404':
+          description: Points not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: POINTS_NOT_FOUND
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: INTERNAL_SERVER_ERROR
+    post:
+      summary: Creates a point with business hours, connect point with labels.
+      parameters:
+        - name: Authorization
+          in: header
+          description: An authorization header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Auth_header'
+      tags:
+        - Points
+      operationId: postPoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                point_data:
+                  $ref: '#/components/schemas/Point'
+                label_ids:
+                  type: array
+                  items:
+                    type: integer
+                  example:
+                    - 1
+                    - 2
+                business_hours_data:
+                  $ref: '#/components/schemas/Business_hours_array'
+      responses:
+        '201':
+          description: Successful response with point, business hours and connected labels to point. Weekdays 0 - Sun, 1 - Mon, 2 - Tue, 3 - Wed, 4 - Thu, 5 - Fri, 6 - Sat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        lat:
+                          type: number
+                        lng:
+                          type: number
+                        formatted_adress:
+                          type: string
+                        labels:
+                          type: array
+                          items:
+                            type: integer
+                  status:
+                    type: string
+                  message:
+                    type: string
+                example:
+                  result:
+                    point:
+                      id: 5
+                      lat: 50.35975
+                      lng: -29.877625
+                      formatted_adress: провулок Мар'яненка, 4, Харків, Харківська область
+                      tz: Europe/Kyiv
+                    business_hours:
+                      - id: 3
+                        weekday: 1
+                        open_hours: '09:00'
+                        close_hours: '18:00'
+                        point_id: 5
+                    labels:
+                      - 1
+                      - 2
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: INTERNAL_SERVER_ERROR
+  /points/{id}:
+    get:
+      summary: Get one point by id.
+      tags:
+        - Points
+      operationId: getOnePoint
+      parameters:
+        - name: id
+          in: path
+          description: Point ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response with array of points. nextTransition shows the next state of point according to current time. Weekdays 0 - Sun, 1 - Mon, 2 - Tue, 3 - Wed, 4 - Thu, 5 - Fri, 6 - Sat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      formatted_adress:
+                        type: string
+                      administrative_area_id:
+                        type: number
+                      tz:
+                        type: string
+                      organization_name:
+                        type: string
+                      organization_icon:
+                        type: string
+                      website:
+                        type: string
+                      number:
+                        type: string
+                      labels:
+                        type: array
+                        items:
+                          type: integer
+                      business_hours:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            weekday:
+                              type: number
+                            open_hours:
+                              type: string
+                            close_hours:
+                              type: string
+                      nextTransition:
+                        type: object
+                        properties:
+                          transition:
+                            type: string
+                          weekday:
+                            type: string
+                          time:
+                            type: string
+                  message:
+                    type: string
+                example:
+                  data:
+                    id: 1
+                    formatted_adress: Il'fa ta Petrova St, 49, Odesa, Odes'ka oblast, Ukraine, 65000
+                    administrative_area_id: 1
+                    tz: Europe/Kyiv
+                    organization_name: automaidan
+                    organization_icon: 6d44471180a74c1c90f712c781447b59
+                    description: We want to help you very much!
+                    website: https://automaidan.ua
+                    number: '+380123456789'
+                    labels:
+                      - 1
+                      - 2
+                    business_hours:
+                      - weekday: 1
+                        open_hours: '09:00'
+                        close_hours: '12:00'
+                      - weekday: 1
+                        open_hours: '13:00'
+                        close_hours: '18:00'
+                    nextTransition:
+                      transition: open
+                      weekday: 1
+                      time: '09:00'
+                  message: SUCCESS
+        '404':
+          description: Point not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: POINT_NOT_FOUND
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: INTERNAL_SERVER_ERROR
+    patch:
+      summary: Patch one point by id.
+      description: Send new point data. If no changes - unneccesary to send. Send new array of label ids if it was changed.Send changed business hours objects(ids required) and new business hours objects in single array, deleted business hour's ids in the other one.
+      tags:
+        - Points
+      operationId: patchOnePoint
+      parameters:
+        - name: Authorization
+          in: header
+          description: An authorization header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Auth_header'
+        - name: id
+          in: path
+          description: Point ID
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                point_data:
+                  $ref: '#/components/schemas/Point'
+                labels:
+                  type: array
+                  items:
+                    type: integer
+                  example:
+                    - 1
+                    - 2
+                business_hours_data:
+                  $ref: '#/components/schemas/Business_hours_array'
+                deleted_business_hours_ids:
+                  type: array
+                  items:
+                    type: integer
+                  example:
+                    - 1
+                    - 2
+      responses:
+        '200':
+          description: Successful response with patched data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: number
+                      formatted_adress:
+                        type: string
+                      tz:
+                        type: string
+                      labels:
+                        type: array
+                        items:
+                          type: integer
+                      business_hours:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            weekday:
+                              type: integer
+                            open_hours:
+                              type: string
+                            close_hours:
+                              type: string
+                  message:
+                    type: string
+                example:
+                  data:
+                    id: 1
+                    formatted_adress: Il'fa ta Petrova St, 49, Odesa, Odes'ka oblast, Ukraine, 65000
+                    tz: Europe/Kyiv
+                    labels:
+                      - 1
+                      - 2
+                    business_hours:
+                      - id: 1
+                        weekday: 1
+                        open_hours: '09:00'
+                        close_hours: '12:00'
+                      - id: 2
+                        weekday: 1
+                        open_hours: '13:00'
+                        close_hours: '18:00'
+                  message: SUCCESS
+        '404':
+          description: Point id was sent but point row was not updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: POINT_NOT_FOUND
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: INTERNAL_SERVER_ERROR
+    delete:
+      summary: Delete one point by id.
+      tags:
+        - Points
+      operationId: deleteOnePoint
+      parameters:
+        - name: Authorization
+          in: header
+          description: An authorization header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Auth_header'
+        - name: id
+          in: path
+          description: Point ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful point delete.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                  message:
+                    type: string
+                    example: SUCCESS
+        '404':
+          description: Point with current id was not found in db to delete.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: POINT_NOT_FOUND
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /recipient/auth/signin:
+    post:
+      summary: Signs in if recipient exist.If does not - sign up.
+      tags:
+        - Recipient Auth
+      operationId: signInRecipient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone_number:
+                  type: string
+                  example: '380123456789'
+      responses:
+        '201':
+          description: Successful response with created one time token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      code_id:
+                        type: string
+                        example: 9f971058-895e-417d-b4bb-af2b26fe08a9
+                  message:
+                    type: string
+                    example: SUCCESS
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /recipient/auth/verify:
+    post:
+      summary: Verify entered code.
+      tags:
+        - Recipient Auth
+      operationId: verifyRecipient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code_id:
+                  type: string
+                  example: 9f971058-895e-417d-b4bb-af2b26fe08a9
+                code:
+                  type: string
+                  example: '123456'
+      responses:
+        '200':
+          description: Successful response with created access and refresh tokens.
+          headers:
+            Set-Cookie:
+              schema:
+                $ref: '#/components/schemas/Cookie_header'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaWF0IjoxNjgwMjc5NTI3LCJleHAiOjE2ODAyODEzMjd9.Kg0-6Adk_qR6GW2SKSZl74rSlkR73Y5L8GoGdcbvOS4
+                  message:
+                    type: string
+                    example: SUCCESS
+        '400':
+          description: Wrong data format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: INVALID_DATA
+        '401':
+          description: Authorisation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              examples:
+                Code expired:
+                  description: Code expired (5 minutes)
+                  value:
+                    error: []
+                    message: CODE_EXPIRED
+                Attempts exhausted:
+                  description: Error after 5 fails.
+                  value:
+                    error: []
+                    message: ATTEMPTS_EXHAUSTED
+                Invalid code:
+                  description: User has entered invalid code.
+                  value:
+                    error: []
+                    message: INVALID_CODE
+        '404':
+          description: Code was not found in db.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: CODE_NOT_FOUND
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /recipient/auth/refresh:
+    post:
+      summary: Refresh tokens.
+      tags:
+        - Recipient Auth
+      operationId: refreshRecipientToken
+      parameters:
+        - name: Authorization
+          in: header
+          description: An authorization header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Auth_header'
+      responses:
+        '200':
+          description: Successful response with refreshed access and refresh tokens.
+          headers:
+            Set-Cookie:
+              schema:
+                $ref: '#/components/schemas/Cookie_header'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaWF0IjoxNjgwMjc5NTI3LCJleHAiOjE2ODAyODEzMjd9.Kg0-6Adk_qR6GW2SKSZl74rSlkR73Y5L8GoGdcbvOS4
+                  message:
+                    type: string
+                    example: SUCCESS
+        '401':
+          description: Authorisation failed.No token or token invalid.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              example:
+                error: []
+                message: USER_IS_NOT_AUTHORIZED
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /recipient/auth/signout:
+    post:
+      summary: Recipient sign out.
+      tags:
+        - Recipient Auth
+      operationId: recipientSignOut
+      parameters:
+        - name: Authorization
+          in: header
+          description: An authorization header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Auth_header'
+      responses:
+        '200':
+          description: Successful response with with no data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                  message:
+                    type: string
+              example:
+                data: {}
+                message: SUCCESS
+        '401':
+          description: Authorisation failed.Invalid token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              example:
+                error: []
+                message: USER_IS_NOT_AUTHORIZED
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /recipient:
+    get:
+      summary: Get recipient.
+      operationId: getRecipient
+      tags:
+        - Recipient
+      parameters:
+        - name: Authorization
+          in: header
+          description: An authorization header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Auth_header'
+      responses:
+        '200':
+          description: Gets recipient data if authorized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Recipient'
+                  message:
+                    type: string
+                    example: SUCCESS
+        '401':
+          description: Detected invalid access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              example:
+                error: []
+                message: USER_IS_NOT_AUTHORIZED
+        '404':
+          description: Recipient not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              example:
+                error: []
+                message: RECIPIENT_NOT_FOUND
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+    patch:
+      summary: Patch recipient.
+      operationId: patchRecipient
+      tags:
+        - Recipient
+      parameters:
+        - name: Authorization
+          in: header
+          description: An authorization header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Auth_header'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recipient'
+      responses:
+        '200':
+          description: Patch recipient data if authorized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Recipient'
+                  message:
+                    type: string
+                    example: SUCCESS
+        '401':
+          description: Detected invalid access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              example:
+                error: []
+                message: USER_IS_NOT_AUTHORIZED
+        '404':
+          description: Recipient not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              example:
+                error: []
+                message: RECIPIENT_NOT_FOUND
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /volunteer/auth/signup:
+    post:
+      description: Volunteer signup method
+      operationId: volunteerSignup
+      tags:
+        - Volunteer Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VolunteerSignUp'
+      responses:
+        '200':
+          description: Created a volunteer user, sended activation letter to email and sended tokens in response. role 0 - superUser
+          headers:
+            Set-Cookie:
+              schema:
+                $ref: '#/components/schemas/Cookie_header'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token_response'
+        '400':
+          description: Detected invalid data from client
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              examples:
+                Email in use:
+                  description: Found such email attached to another user
+                  value:
+                    error: []
+                    message: EMAIL_IS_ALREADY_IN_USE
+                Invalid email address:
+                  description: Not able to find email and send activation letter
+                  value:
+                    error:
+                      code: ENVELOPE
+                      command: API
+                    message: NO_RECIPIENTS_DEFINED
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /volunteer/auth/signin:
+    post:
+      description: Volunteer signin method
+      operationId: volunteerSignin
+      tags:
+        - Volunteer Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VolunteerSignIn'
+      responses:
+        '200':
+          description: Sended tokens in response. role 0 - superUser
+          headers:
+            Set-Cookie:
+              schema:
+                $ref: '#/components/schemas/Cookie_header'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token_response'
+        '400':
+          description: Detected invalid data from client
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              examples:
+                User not found:
+                  description: Not found such email attached to user
+                  value:
+                    error: []
+                    message: USER_NOT_FOUND
+                Invalid password:
+                  description: Detected password mismatch
+                  value:
+                    error: []
+                    message: INVALID_PASSWORD
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /volunteer/auth/signout:
+    post:
+      description: Volunteer signout method
+      operationId: volunteerSignout
+      tags:
+        - Volunteer Auth
+      parameters:
+        - name: Authorization
+          in: header
+          description: An authorization header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Auth_header'
+      responses:
+        '200':
+          description: Deleted user session info on server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                  message:
+                    type: string
+              example:
+                data: {}
+                message: SUCCESS
+        '401':
+          description: Detected invalid access token or not detected user session info on server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              example:
+                error: []
+                message: USER_IS_NOT_AUTHORIZED
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /volunteer/auth/resend:
+    get:
+      description: Resending activation letter to volunteer email method
+      operationId: resendVolunteerLetter
+      tags:
+        - Volunteer Auth
+      parameters:
+        - name: Authorization
+          in: header
+          description: An authorization header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Auth_header'
+      responses:
+        '200':
+          description: Sended activation letter to address
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                  message:
+                    type: string
+              example:
+                data: {}
+                message: SUCCESS
+        '400':
+          description: Detected invalid data from client
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              examples:
+                User not found:
+                  description: Not found such user
+                  value:
+                    error: []
+                    message: USER_NOT_FOUND
+                Email is activated:
+                  description: Detected that email already has been activated
+                  value:
+                    error: []
+                    message: EMAIL_IS_ALREADY_ACTIVATED
+                Invalid email address:
+                  description: Not able to find email and send activation letter
+                  value:
+                    error:
+                      code: ENVELOPE
+                      command: API
+                    message: NO_RECIPIENTS_DEFINED
+        '401':
+          description: Detected invalid access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              example:
+                error: []
+                message: USER_IS_NOT_AUTHORIZED
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /volunteer/auth/refresh:
+    get:
+      description: Refreshing tokens method
+      operationId: refreshVolunteerTokens
+      tags:
+        - Volunteer Auth
+      parameters:
+        - name: Set-Cookie
+          in: header
+          description: A http only cookie header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Cookie_header'
+      responses:
+        '200':
+          description: Sended tokens in response
+          headers:
+            Set-Cookie:
+              schema:
+                $ref: '#/components/schemas/Cookie_header'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token_response'
+        '401':
+          description: Detected invalid refresh token or not detected user session info on server
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              example:
+                error: []
+                message: USER_IS_NOT_AUTHORIZED
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /volunteer/auth/activate/{link}:
+    get:
+      description: This method is ONLY CALLED BY USER when clicking on the account activation link. DO NOT try to call it from client side
+      operationId: activateVolunteerAccount
+      tags:
+        - Not for JS
+      parameters:
+        - name: link
+          in: path
+          description: An activation link
+          required: true
+          schema:
+            type: string
+      responses:
+        x-success-activation:
+          description: Activated volunteer account and redirected to the dev.volunteera.app/home
+        default:
+          description: Not found such link attached to volunteer
+          content:
+            text/html:
+              example: <h1>Your activation link is not valid</h1>
+  /volunteer/verify:
+    get:
+      description: This method should be called ONCE every time when authorized user tries to open frontend domain to check necessary info about him and then get all data about himself and attached organization
+      operationId: verify
+      tags:
+        - Volunteer
+      parameters:
+        - name: Authorization
+          in: header
+          description: An authorization header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Auth_header'
+      responses:
+        '200':
+          description: Successful answer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                example:
+                  message: SUCCESS
+        '400':
+          description: Detected invalid data from client
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              examples:
+                User not found:
+                  description: Not found such user
+                  value:
+                    error: []
+                    message: USER_NOT_FOUND
+                Email is not activated:
+                  description: Detected that email has not been activated
+                  value:
+                    error: []
+                    message: EMAIL_IS_NOT_ACTIVATED
+                Organization is not created:
+                  description: Detected if user is admin but has no organization attached to him
+                  value:
+                    error: []
+                    message: ORGANIZATION_NOT_FOUND
+        '401':
+          description: Detected invalid access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              example:
+                error: []
+                message: USER_IS_NOT_AUTHORIZED
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /organization/create:
+    post:
+      description: Organization create method, resizing image to 400x400 res with "fit = fill" property
+      operationId: organizationCreate
+      tags:
+        - Organization
+      parameters:
+        - name: Authorization
+          in: header
+          description: An authorization header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Auth_header'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Organization'
+      responses:
+        '200':
+          description: Created user's organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization_response'
+        '400':
+          description: Detected invalid data from client
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              examples:
+                Necessary fields not filled:
+                  description: Necessary fields (name, number or description) is not filled
+                  value:
+                    error: []
+                    message: NECESSARY_FIELDS_NOT_FILLED
+                User not found:
+                  description: Not found such user
+                  value:
+                    error: []
+                    message: USER_NOT_FOUND
+                Email is not activated:
+                  description: Detected that email has not been activated
+                  value:
+                    error: []
+                    message: EMAIL_IS_NOT_ACTIVATED
+                Existing organization:
+                  description: Found organization attached to such user
+                  value:
+                    error: []
+                    message: ORGANIZATION_IS_ALREADY_EXIST
+                Name in use:
+                  description: Found such name using by other organization
+                  value:
+                    error: []
+                    message: NAME_IS_ALREADY_IN_USE
+        '401':
+          description: Detected invalid access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              example:
+                error: []
+                message: USER_IS_NOT_AUTHORIZED
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /organization/edit:
+    post:
+      description: Organization edit method, resizing image to 400x400 res with "fit = fill" property
+      operationId: organizationEdit
+      tags:
+        - Organization
+      parameters:
+        - name: Authorization
+          in: header
+          description: An authorization header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Auth_header'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Organization'
+      responses:
+        '200':
+          description: Edited user's organization fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization_response'
+        '400':
+          description: Detected invalid data from client
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              examples:
+                Invalid fields:
+                  description: Detected invalid fields for organization editing
+                  value:
+                    error: []
+                    message: INVALID_FIELDS_FOR_EDITING
+                Organization not found:
+                  description: Not found organization attached to such user
+                  value:
+                    error: []
+                    message: ORGANIZATION_NOT_FOUND
+                Name in use:
+                  description: Found such name using by other organization (if name was edited)
+                  value:
+                    error: []
+                    message: NAME_IS_ALREADY_IN_USE
+        '401':
+          description: Detected invalid access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              example:
+                error: []
+                message: USER_IS_NOT_AUTHORIZED
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /organization/data:
+    get:
+      description: Method for getting all data about user's organization
+      operationId: organizationData
+      tags:
+        - Organization
+      parameters:
+        - name: Authorization
+          in: header
+          description: An authorization header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Auth_header'
+      responses:
+        '200':
+          description: Returned data about user's organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization_response'
+        '400':
+          description: Detected invalid data from client
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              examples:
+                User not found:
+                  description: Not found such user
+                  value:
+                    error: []
+                    message: USER_NOT_FOUND
+                Organization not found:
+                  description: Not found organization attached to such user
+                  value:
+                    error: []
+                    message: ORGANIZATION_NOT_FOUND
+        '401':
+          description: Detected invalid access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              example:
+                error: []
+                message: USER_IS_NOT_AUTHORIZED
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /organization/icon/{name}:
+    get:
+      description: Get specific organization icon by name, returns image/png
+      operationId: organizationIcon
+      tags:
+        - Organization
+      parameters:
+        - name: name
+          in: path
+          description: Name of organization icon
+          required: true
+          schema:
+            type: string
+          example: 8eb6ec69e2544597be1c9dd04a5ef150
+      responses:
+        '200':
+          description: Returned orgnization icon by name
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+  /organization/points:
+    get:
+      description: Gets all organization's points.
+      tags:
+        - Organization
+      parameters:
+        - name: Authorization
+          in: header
+          description: An authorization header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Auth_header'
+      responses:
+        '200':
+          description: Return array of organization's points.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        lat:
+                          type: number
+                        lng:
+                          type: number
+                        formatted_adress:
+                          type: string
+                        tz:
+                          type: string
+                        business_hours:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: number
+                              weekday:
+                                type: number
+                              open_hours:
+                                type: string
+                              close_hours:
+                                type: string
+                  message:
+                    type: string
+                example:
+                  data:
+                    - id: 72
+                      lat: 46.4789
+                      lng: 46.4789
+                      formatted_address: провулок Мар'яненка, 4, Харків, Харківська область
+                      tz: Europe/Kyiv
+                      business_hours:
+                        - id: 27
+                          weekday: 1
+                          open_hours: '09:00'
+                          close_hours: '18:00'
+                    - id: 68
+                      lat: 48.82736885298422
+                      lng: 2.314252349864596
+                      formatted_address: провулок Мар'яненка, 22, Миколаїв, Миколаївська область
+                      tz: Europe/Paris
+                      business_hours:
+                        - id: 46
+                          weekday: 0
+                          open_hours: '18:00'
+                          close_hours: '19:00'
+                  message: SUCCESS
+        '401':
+          description: Detected invalid access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              example:
+                error: []
+                message: USER_IS_NOT_AUTHORIZED
+        '404':
+          description: Authorisation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                  message:
+                    type: string
+              examples:
+                User not found:
+                  description: No such user in db.
+                  value:
+                    error: []
+                    message: USER_NOT_FOUND
+                Organization not found:
+                  description: User has no organization.
+                  value:
+                    error: []
+                    message: ORGANIZATION_NOT_FOUND
+        '500':
+          description: Triggered unexpected server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Internal_error'
+components:
+  schemas:
+    Point:
+      type: object
+      required:
+        - lat
+        - lng
+        - country
+        - region
+        - locality
+        - administrative_area_id
+      properties:
+        lat:
+          type: number
+          example: 46.4789
+        lng:
+          type: number
+          example: 46.4789
+        country:
+          type: string
+          example: Україна
+        region:
+          type: string
+          example: Харківська область
+        locality:
+          type: string
+          example: Харків
+        street:
+          type: string
+          example: провулок Мар'яненка
+        house_number:
+          type: string
+          example: '4'
+        administrative_area_id:
+          type: integer
+          example: 1
+    Business_hours:
+      type: object
+      required:
+        - weekend
+        - open_hours
+        - close_hours
+        - tz
+      properties:
+        weekday:
+          type: integer
+          example: 1
+        open_hours:
+          type: string
+          example: '09:00'
+        close_hours:
+          type: string
+          example: '18:00'
+    Business_hours_array:
+      type: array
+      items:
+        $ref: '#/components/schemas/Business_hours'
+    Recipient:
+      type: object
+      required:
+        - phone_number
+      properties:
+        id:
+          type: number
+          example: 1
+        first_name:
+          type: string
+          example: Іван
+        last_name:
+          type: string
+          example: Іванов
+        patronymic:
+          type: string
+          example: Іванович
+        phone_number:
+          type: string
+          example: 380123456789
+    VolunteerSignUp:
+      type: object
+      required:
+        - email
+        - password
+        - first_name
+        - last_name
+      properties:
+        email:
+          type: string
+          example: example@gmail.com
+        password:
+          type: string
+          example: V34fe2sf5
+        first_name:
+          type: string
+          example: Evelynn
+        last_name:
+          type: string
+          example: Smith
+    VolunteerSignIn:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          example: example@gmail.com
+        password:
+          type: string
+          example: V34fe2sf5
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 3
+        email:
+          type: string
+          example: example@gmail.com
+    Organization:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: 10 Квітня
+        number:
+          type: string
+          example: '380444618061'
+        website:
+          type: string
+          example: 10april.com
+        description:
+          type: string
+          example: 'Ми створені заради захисту прав людини та розвитку суспільства. Захищаємо права вразливих груп: біженців, внутрішньо переміщених осіб, осіб без громадянства та інших, хто не здатен зробити це самостійно.'
+        icon:
+          type: object
+          format: image
+    Token_response:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            access_token:
+              type: string
+              example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJoYXJkOTAzMjVAZ21haWwuY29tIiwiaWF0IjoxNjc5NjcyNTE4LCJleHAiOjE2Nzk2NzQzMTh9.fKWf_F-HqMaju6MTgCOCJTzWtoSJ5lugstEPIZ1VoCM
+            user:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: example@gmail.com
+                role:
+                  type: integer
+                  example: 0
+                first_name:
+                  type: string
+                  example: Evelynn
+                last_name:
+                  type: string
+                  example: Smith
+        message:
+          type: string
+          example: SUCCESS
+    Organization_response:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: integer
+          example: 12
+        name:
+          type: string
+          example: 10 Квітня
+        number:
+          type: string
+          example: '380444618061'
+        website:
+          type: string
+          example: 10april.com
+        description:
+          type: string
+          example: 'Ми створені заради захисту прав людини та розвитку суспільства. Захищаємо права вразливих груп: біженців, внутрішньо переміщених осіб, осіб без громадянства та інших, хто не здатен зробити це самостійно.'
+        icon:
+          type: string
+          example: 8eb6ec69e2544597be1c9dd04a5ef150
+    Cookie_header:
+      type: string
+      example: refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJoYXJkOTAzMjVAZ21haWwuY29tIiwiaWF0IjoxNjc5NjcyNTE4LCJleHAiOjE2Nzk3NTg5MTh9.4L813R5SpsY5pCflqeEjrXEgM2am3i2lGiEzcSdxH5I; Max-Age=86400; Path=/; Expires=Sat, 25 Mar 2023 15:41:59 GMT; HttpOnly
+    Auth_header:
+      type: string
+      example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiZW1haWwiOiJoYXJkOTAzMjVAZ21haWwuY29tIiwiaWF0IjoxNjc5Mjc2MDE4LCJleHAiOjE2NzkyNzc4MTh9.M5zQrMP405Wk09E0acRs7jb62UMDFzVQh3DJySw1B14
+    Internal_error:
+      type: object
+      properties:
+        error:
+          type: object
+          example: []
+        message:
+          type: string
+          example: INTERNAL_SERVER_ERROR
