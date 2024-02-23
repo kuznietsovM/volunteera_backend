@@ -10,21 +10,7 @@ const apiRouter = require("./routes");
 const cookieParser = require("cookie-parser");
 const ErrorMiddleware = require("./middlewares/error.middleware");
 
-// app.use(cors({ origin: process.env.ORIGIN.split(' ') ?? "*"}));
-app.use(function(req, res, next){
-  const whitelist = process.env.ORIGIN.split(' ');
-  const origin = req.headers.origin;
-
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Set-Cookie, Cookie, Authorization, X-requested-with');
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE, PATCH");
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  whitelist.forEach(function(val, key){
-    if (origin && origin.indexOf(val) > -1){
-      res.setHeader('Access-Control-Allow-Origin', origin);
-    }
-  });
-  next();
-});
+app.use(cors({ origin: process.env.ORIGIN.split(' ') ?? "*"}));
 
 app.use(express.json({ limit: "100mb" }));
 app.use(cookieParser());

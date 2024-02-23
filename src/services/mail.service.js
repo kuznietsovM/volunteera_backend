@@ -2,7 +2,8 @@ const nodemailer = require('nodemailer');
 const ApiError = require("../exceptions/api.error");
 
 const sendActivationMail = async (to, link) => {
-    link = process.env.API_URL + "/volunteer/auth/activate/" + link;
+    const host = process.env.API_URL ?? process.env.ORIGIN
+    link = host + "/volunteer/auth/activate/" + link;
 
     const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,

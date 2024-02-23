@@ -73,7 +73,7 @@ const activate = async(req, res, next) =>{
     try{
         const activationLink = req.params.link;
         await volunteerService.activate(activationLink);
-        return res.redirect(process.env.CLIENT_URL);
+        return process.env.CLIENT_URL ? res.redirect(process.env.CLIENT_URL) : res.status(200).send('<h1>Activation success. Now you can sign in.</h1>');
     } catch(e) {
         next(e);
     }
